@@ -3,6 +3,9 @@ import { Geist, Geist_Mono, Inter } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
 import { cn } from "@/lib/utils";
+import { getSession } from "@/lib/auth-client";
+import { headers } from "next/headers";
+import { SessionProvider } from "@/components/session-provider";
 
 const inter = Inter({subsets:['latin'],variable:'--font-sans'});
 
@@ -21,7 +24,10 @@ export const metadata: Metadata = {
   description: "Enterprise grade authentication with Better Auth",
 };
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export default async function RootLayout({ children }: LayoutProps<"/">) {
+  const { data: session } = await getSession({
+    fetchOptions: { headers: await headers() },
+  });
   return (
     <html
       suppressHydrationWarning
@@ -35,7 +41,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           enableSystem
           disableTransitionOnChange
         >
-          {children}
+          <SessionProvider session={session}>
+            {children}
+          </SessionProvider>
         </ThemeProvider>
       </body>
     </html>
