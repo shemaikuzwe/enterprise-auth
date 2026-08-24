@@ -4,6 +4,7 @@ import { twoFactor,admin } from "better-auth/plugins"
 import { db } from "./db";
 
 export const auth = betterAuth({
+  baseURL:process.env.NEXT_PUBLIC_BASE_URL!,
   database: drizzleAdapter(db, {
     provider: "pg",
   }),

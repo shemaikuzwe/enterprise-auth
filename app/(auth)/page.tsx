@@ -1,7 +1,8 @@
 import { HugeiconsIcon } from "@hugeicons/react"
-import { GithubIcon, GlobeIcon, GoogleIcon, MailIcon } from "@hugeicons/core-free-icons"
+import { GlobeIcon, MailIcon } from "@hugeicons/core-free-icons"
 import Link from "next/link"
 
+import { OAuthButtons } from "@/components/oauth-buttons"
 import { Button } from "@/components/ui/button"
 import {
   Card,
@@ -18,12 +19,6 @@ export const metadata = {
   title: "Sign in",
 }
 
-// TODO(better-auth): replace with real provider ids/config from authClient
-const oauthProviders = [
-  { id: "google", name: "Google", icon: GoogleIcon },
-  { id: "github", name: "GitHub", icon: GithubIcon },
-] as const
-
 export default function LoginPage() {
   return (
     <Card>
@@ -34,15 +29,7 @@ export default function LoginPage() {
         </CardDescription>
       </CardHeader>
       <CardContent className="flex flex-col gap-4">
-        <div className="grid grid-cols-2 gap-2">
-          {oauthProviders.map((provider) => (
-            <Button key={provider.id} variant="outline" size="lg" type="button">
-              <HugeiconsIcon icon={provider.icon} data-icon="inline-start" />
-              {provider.name}
-              {/* TODO(better-auth): authClient.signIn.social({ provider: "..." }) */}
-            </Button>
-          ))}
-        </div>
+        <OAuthButtons />
 
         <div className="flex items-center gap-3">
           <Separator className="flex-1" />
