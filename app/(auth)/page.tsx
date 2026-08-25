@@ -1,7 +1,8 @@
-import { HugeiconsIcon } from "@hugeicons/react"
-import { GlobeIcon, MailIcon } from "@hugeicons/core-free-icons"
+import { EmailSignInForm } from "@/components/auth/email-sign-in-form"
 import Link from "next/link"
 
+import { HugeiconsIcon } from "@hugeicons/react"
+import { GlobeIcon } from "@hugeicons/core-free-icons"
 import { OAuthButtons } from "@/components/oauth-buttons"
 import { Button } from "@/components/ui/button"
 import {
@@ -12,7 +13,6 @@ import {
   CardTitle,
 } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
 import { Separator } from "@/components/ui/separator"
 
 export const metadata = {
@@ -36,28 +36,8 @@ export default function LoginPage() {
           <span className="text-xs text-muted-foreground">or continue with</span>
           <Separator className="flex-1" />
         </div>
+        <EmailSignInForm />
 
-        <form className="flex flex-col gap-4">
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="email">Email</Label>
-            {/* TODO(better-auth): passwordless — authClient.signIn.emailOtp({ email })
-                or magicLink plugin: authClient.signIn.magicLink({ email }) */}
-            <Input
-              id="email"
-              type="email"
-              name="email"
-              placeholder="m@example.com"
-              autoComplete="email"
-              required
-            />
-          </div>
-          {/* TODO(better-auth): submit sends an OTP code to the email above,
-              then redirect the user to /two-factor?email=... to enter it */}
-          <Button type="submit" size="lg" className="w-full">
-            <HugeiconsIcon icon={MailIcon} data-icon="inline-start" />
-            Continue with email
-          </Button>
-        </form>
 
         <div className="rounded-md border border-dashed border-border bg-muted/40 p-3 text-xs text-muted-foreground">
           <p className="mb-1 flex items-center gap-1.5 font-medium text-foreground">

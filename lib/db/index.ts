@@ -10,4 +10,4 @@ const pool = new Pool({
 
 const db = drizzle({ client: pool, schema });
 export type User = typeof schema.user.$inferSelect
-export { db }
+export { db, schema }
