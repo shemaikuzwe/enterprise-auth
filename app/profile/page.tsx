@@ -12,6 +12,7 @@ import { useMutation } from "@tanstack/react-query"
 
 import { Account } from "@/components/account"
 import { Session } from "@/components/session"
+import { TwoFactorSettings } from "@/components/auth/two-factor-settings"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
@@ -90,6 +91,7 @@ export default function ProfilePage() {
           <TabsList>
             <TabsTrigger value="sessions">Sessions</TabsTrigger>
             <TabsTrigger value="accounts">Accounts</TabsTrigger>
+            <TabsTrigger value="security">Security</TabsTrigger>
           </TabsList>
 
           <TabsContent value="sessions">
@@ -98,6 +100,10 @@ export default function ProfilePage() {
 
           <TabsContent value="accounts">
             <Account />
+          </TabsContent>
+
+          <TabsContent value="security">
+            <TwoFactorSettings />
           </TabsContent>
         </Tabs>
       </main>
