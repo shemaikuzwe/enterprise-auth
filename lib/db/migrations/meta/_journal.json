@@ -8,6 +8,13 @@
       "when": 1787607241664,
       "tag": "0000_naive_christian_walker",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1787741548587,
+      "tag": "0001_rare_red_skull",
+      "breakpoints": true
     }
   ]
 }

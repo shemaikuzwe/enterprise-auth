@@ -7,6 +7,7 @@ import {
   integer,
   index,
   uniqueIndex,
+  varchar,
 } from "drizzle-orm/pg-core";
 
 export const user = pgTable("user", {
@@ -112,7 +113,18 @@ export const twoFactor = pgTable(
     index("twoFactor_userId_idx").on(table.userId),
   ],
 );
-
+export const deviceCode = pgTable("device_code", {
+	id: text("id").primaryKey(),
+	deviceCode: varchar("device_code", { length: 255 }).notNull().unique(),
+	userCode: varchar("user_code", { length: 255 }).notNull().unique(),
+	userId: text("user_id"),
+	clientId: text("client_id"),
+	scope: text("scope"),
+	status: text("status").notNull(),
+	expiresAt: timestamp("expires_at", { precision: 6, withTimezone: true }).notNull(),
+	lastPolledAt: timestamp("last_polled_at", { precision: 6, withTimezone: true }),
+	pollingInterval: integer("polling_interval"),
+});
 export const userRelations = relations(user, ({ many }) => ({
   sessions: many(session),
   accounts: many(account),

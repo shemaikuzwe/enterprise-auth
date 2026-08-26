@@ -6,7 +6,7 @@ import { sendSignInNotification, sendSignInOtp } from "./email/send";
 
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "@better-auth/drizzle-adapter";
-import { admin, emailOTP, twoFactor } from "better-auth/plugins";
+import { admin, bearer, deviceAuthorization, emailOTP, twoFactor } from "better-auth/plugins";
 import { oauthTwoFactor } from "./two-factor";
 
 export const auth = betterAuth({
@@ -52,6 +52,7 @@ export const auth = betterAuth({
     },
   },
   plugins: [
+    bearer(),
     twoFactor({ issuer: "Acme Inc.", allowPasswordless: true }),
     oauthTwoFactor(),
     admin(),
@@ -61,5 +62,8 @@ export const auth = betterAuth({
         await sendSignInOtp(email, otp);
       },
     }),
+    deviceAuthorization({
+      verificationUri:"/device"
+    })
   ],
 });
