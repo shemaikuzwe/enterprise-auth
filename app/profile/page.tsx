@@ -11,6 +11,7 @@ import { useRouter } from "next/navigation"
 import { useMutation } from "@tanstack/react-query"
 
 import { Account } from "@/components/account"
+import { InvitationDialog } from "@/components/organization/invitation-dialog"
 import { Session } from "@/components/session"
 import { TwoFactorSettings } from "@/components/auth/two-factor-settings"
 import { ThemeToggle } from "@/components/theme-toggle"
@@ -38,6 +39,7 @@ export default function ProfilePage() {
 
   return (
     <div className="flex min-h-svh flex-col bg-background">
+      <InvitationDialog />
       <header className="border-b">
         <div className="mx-auto flex h-14 w-full max-w-2xl items-center justify-between px-6">
           <Link href="/" className="flex items-center gap-2 font-medium">
@@ -46,7 +48,15 @@ export default function ProfilePage() {
             </span>
             Acme Inc.
           </Link>
-          <ThemeToggle />
+          <div className="flex items-center gap-1">
+            <Link
+              href="/organization"
+              className="text-sm text-muted-foreground hover:text-foreground"
+            >
+              Organizations
+            </Link>
+            <ThemeToggle />
+          </div>
         </div>
       </header>
 
