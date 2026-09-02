@@ -28,3 +28,14 @@ export function getDeviceType(ua: string): "desktop" | "mobile" | "tablet" {
   if (type === "tablet") return "tablet";
   return "desktop";
 }
+
+export function toSlug(name: string) {
+  return name.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+}
+
+export const DEFAULT_REDIRECT = "/home";
+
+export function redirect(value: string | null | undefined): string {
+  if (!value?.startsWith("/") || value.startsWith("//")) return DEFAULT_REDIRECT;
+  return value;
+}

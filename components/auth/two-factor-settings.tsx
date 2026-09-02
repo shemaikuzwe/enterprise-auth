@@ -59,9 +59,6 @@ export function TwoFactorSettings() {
     setCode("")
     setError(null)
   }
-
-  // Generates the TOTP secret + backup codes. The account only flips to
-  // twoFactorEnabled once the first code is verified below.
   const enableMutation = useMutation({
     mutationFn: async () => {
       const { data, error } = await twoFactor.enable({ method: "totp" })
@@ -186,7 +183,6 @@ export function TwoFactorSettings() {
         </section>
       )}
 
-      {/* Enrollment: scan QR, confirm the first code, then codes download */}
       <Dialog open={enableOpen} onOpenChange={setEnableOpen}>
         <DialogContent>
           <DialogHeader>
@@ -200,7 +196,6 @@ export function TwoFactorSettings() {
           {setup ? (
             <>
               <div className="mx-auto rounded-lg bg-white p-3">
-                {/* Authenticator apps need high contrast — force dark-on-light regardless of theme */}
                 <QRCode value={setup.totpURI} size={176} bgColor="#ffffff" fgColor="#000000" />
               </div>
 
@@ -249,35 +244,10 @@ export function TwoFactorSettings() {
                 </Button>
               </DialogFooter>
             </>
-          ) : (
-            <DialogFooter>
-              {enableMutation.isPending ? (
-                <p className="text-xs text-muted-foreground">Setting up…</p>
-              ) : null}
-              {error && !enableMutation.isPending ? (
-                <p className="text-xs text-destructive">{error}</p>
-              ) : null}
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setEnableOpen(false)}
-                disabled={enableMutation.isPending}
-              >
-                Cancel
-              </Button>
-              <Button
-                type="button"
-                onClick={() => enableMutation.mutate()}
-                disabled={enableMutation.isPending}
-              >
-                Retry
-              </Button>
-            </DialogFooter>
-          )}
+          ) : null}
         </DialogContent>
       </Dialog>
 
-      {/* Disable confirmation */}
       <Dialog open={disableOpen} onOpenChange={setDisableOpen}>
         <DialogContent>
           <DialogHeader>
@@ -310,7 +280,6 @@ export function TwoFactorSettings() {
         </DialogContent>
       </Dialog>
 
-      {/* Regenerate recovery codes */}
       <Dialog open={regenerateOpen} onOpenChange={setRegenerateOpen}>
         <DialogContent>
           <DialogHeader>

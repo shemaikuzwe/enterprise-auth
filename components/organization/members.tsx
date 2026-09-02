@@ -43,21 +43,7 @@ export function Members({ organizationId }: { organizationId: string }) {
     onError: (mutationError) => setError(mutationError.message),
   })
 
-  const cancelInvitationMutation = useMutation({
-    mutationFn: async (invitationId: string) => {
-      const { error } = await authClient.organization.cancelInvitation({ invitationId })
-      if (error) throw new Error(error.message ?? "Failed to cancel invitation")
-    },
-    onSuccess: () =>
-      queryClient.invalidateQueries({ queryKey: ["organization", organizationId] }),
-    onError: (mutationError) => setError(mutationError.message),
-  })
-
   const members = organizationQuery.data?.members ?? []
-  const pendingInvitations = (organizationQuery.data?.invitations ?? []).filter(
-    (invitation) => invitation.status === "pending",
-  )
-  const isBusy = removeMemberMutation.isPending || cancelInvitationMutation.isPending
 
   return (
     <Card>
@@ -66,7 +52,9 @@ export function Members({ organizationId }: { organizationId: string }) {
         <CardDescription>
           People with access to this organization.
         </CardDescription>
-        <InviteMemberDialog organizationId={organizationId} />
+        <div className="w-24 flex">
+          <InviteMemberDialog organizationId={organizationId} />
+        </div>
       </CardHeader>
       <CardContent className="flex flex-col gap-3">
         {members.map((member) => (
@@ -85,32 +73,12 @@ export function Members({ organizationId }: { organizationId: string }) {
                 variant="ghost"
                 size="sm"
                 type="button"
-                disabled={isBusy}
+                disabled={removeMemberMutation.isPending}
                 onClick={() => removeMemberMutation.mutate(member.id)}
               >
                 Remove
               </Button>
             )}
-          </div>
-        ))}
-
-        {pendingInvitations.map((invitation) => (
-          <div key={invitation.id} className="flex items-center gap-3">
-            <span className="truncate text-sm text-muted-foreground">
-              {invitation.email}
-            </span>
-            <Badge variant="outline" className="ml-auto">
-              Pending
-            </Badge>
-            <Button
-              variant="ghost"
-              size="sm"
-              type="button"
-              disabled={isBusy}
-              onClick={() => cancelInvitationMutation.mutate(invitation.id)}
-            >
-              Cancel
-            </Button>
           </div>
         ))}
 

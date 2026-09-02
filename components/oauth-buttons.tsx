@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image"
-import { useRouter } from "next/navigation"
+import { useMutation } from "@tanstack/react-query"
 import { useState } from "react"
 
 import { Button } from "@/components/ui/button"
@@ -12,27 +12,28 @@ const oauthProviders = [
   { id: "github", name: "GitHub", icon: "/github.svg" },
 ] as const
 
-export function OAuthButtons() {
-  const router = useRouter()
-  const [loading, setLoading] = useState<string | null>(null)
+export function OAuthButtons({ redirect }: { redirect: string }) {
   const [error, setError] = useState<string | null>(null)
 
-  async function handleSignIn(provider: "google" | "github") {
-    setError(null)
-    setLoading(provider)
-    try {
+  const oauthMutation = useMutation({
+    mutationFn: async (provider: (typeof oauthProviders)[number]["id"]) => {
+
       const { error } = await signIn.social({
         provider,
-        callbackURL: "/profile",
+        callbackURL: redirect,
       })
       if (error) {
-        setError(error.message ?? "Failed to sign in")
-      } else {
-        router.push("/profile")
+        throw new Error(error.message ?? "Failed to sign in")
       }
-    } finally {
-      setLoading(null)
-    }
+    },
+    onError: (mutationError: Error) => {
+      setError(mutationError.message)
+    },
+  })
+
+  function handleSignIn(provider: "google" | "github") {
+    setError(null)
+    oauthMutation.mutate(provider)
   }
 
   return (
@@ -44,11 +45,11 @@ export function OAuthButtons() {
             variant="outline"
             size="lg"
             type="button"
-            disabled={loading !== null}
+            disabled={oauthMutation.isPending}
             onClick={() => handleSignIn(provider.id)}
           >
             <Image src={provider.icon} alt="" width={16} height={16} data-icon="inline-start" className={provider.id === "github" ? "dark:invert" : undefined} />
-            {loading === provider.id ? "Redirecting…" : provider.name}
+            {oauthMutation.isPending && oauthMutation.variables === provider.id ? "Redirecting…" : provider.name}
           </Button>
         ))}
       </div>

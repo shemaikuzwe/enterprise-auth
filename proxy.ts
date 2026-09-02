@@ -1,33 +1,42 @@
 import { headers } from "next/headers";
 import { type NextRequest, NextResponse } from "next/server";
-import { getSession} from "./lib/auth-client";
 
-const protectedPaths = [
-  "/profile",
-];
+import { auth } from "./lib/auth";
+import { getSession } from "./lib/auth-client";
+import { redirect } from "./lib/utils";
+
+const protectedPaths = ["/home", "/settings", "/onboarding"];
+const authPaths = ["/signin", "/signup"];
+const onboardingPaths = ["/home", "/settings"];
 
 export async function proxy(request: NextRequest) {
-  const { pathname } = request.nextUrl;
-  const response = await getSession({
-      fetchOptions: { headers: await headers() },
-    });
-   const session = response.data;
-   const user = session?.user;
-  const isAuthenticated = !!user;
+  const { pathname, searchParams } = request.nextUrl;
+  const { data: session } = await getSession({
+    fetchOptions: { headers: await headers() },
+  });
+  const isAuthenticated = !!session?.user;
 
-  const isProtectedRoute = protectedPaths.some((path) => pathname.startsWith(path));
-  if (isProtectedRoute && !isAuthenticated) {
-    const loginUrl = new URL("/", request.url);
-    loginUrl.searchParams.set("redirect", pathname);
-    return NextResponse.redirect(loginUrl);
+  if (pathname === "/") {
+    return NextResponse.redirect(new URL(isAuthenticated ? "/home" : "/signin", request.url));
   }
-  const isAuthRoute =
-    (pathname.startsWith("/auth") || pathname === "/")
-  if (isAuthRoute && isAuthenticated) {
-    const redirectPath = request.nextUrl.searchParams.get("redirect");
-    const destination =
-      redirectPath?.startsWith("/") && !redirectPath.startsWith("//") ? redirectPath : "/profile";
-    return NextResponse.redirect(new URL(destination, request.url));
+
+  if (protectedPaths.some((path) => pathname.startsWith(path)) && !isAuthenticated) {
+    const url = new URL("/signin", request.url);
+    url.searchParams.set("redirect", pathname);
+    return NextResponse.redirect(url);
+  }
+
+  if (isAuthenticated && onboardingPaths.some((path) => pathname.startsWith(path))) {
+    const organizations = await auth.api.listOrganizations({
+      headers: request.headers,
+    });
+    if (organizations.length === 0) {
+      return NextResponse.redirect(new URL("/onboarding", request.url));
+    }
+  }
+
+  if (authPaths.some((path) => pathname.startsWith(path)) && isAuthenticated) {
+    return NextResponse.redirect(new URL(redirect(searchParams.get("redirect")), request.url));
   }
 
   return NextResponse.next();

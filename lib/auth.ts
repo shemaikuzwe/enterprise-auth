@@ -82,12 +82,11 @@ export const auth = betterAuth({
           to: email,
           organizationName: organization.name,
           inviterEmail: inviter.user.email,
-          inviteUrl: `${process.env.NEXT_PUBLIC_BASE_URL}/profile?invite=${id}`,
+          inviteUrl: `${process.env.NEXT_PUBLIC_BASE_URL}/invite/${id}`,
         });
       },
     }),
     sso({
-      // Members arrive through the customer's IdP rather than an invitation.
       organizationProvisioning: { defaultRole: "member" },
     }),
   ],

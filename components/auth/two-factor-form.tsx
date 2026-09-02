@@ -2,6 +2,7 @@
 
 import { HugeiconsIcon } from "@hugeicons/react"
 import { ArrowLeftIcon, ShieldKeyIcon } from "@hugeicons/core-free-icons"
+import { useMutation } from "@tanstack/react-query"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useState } from "react"
@@ -18,17 +19,16 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { InputOTP, InputOTPGroup, InputOTPSeparator, InputOTPSlot } from "@/components/ui/input-otp"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { REGEXP_ONLY_DIGITS } from "input-otp"
 import { twoFactor } from "@/lib/auth-client"
 
 const CODE_LENGTH = 6
 
-export function TwoFactorForm() {
+export function TwoFactorForm({ redirect }: { redirect: string }) {
   const router = useRouter()
   const [mode, setMode] = useState<"totp" | "backup">("totp")
   const [code, setCode] = useState("")
-  const [trustDevice, setTrustDevice] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [verifying, setVerifying] = useState(false)
 
   function switchMode(nextMode: "totp" | "backup") {
     setMode(nextMode)
@@ -36,31 +36,35 @@ export function TwoFactorForm() {
     setError(null)
   }
 
-  async function verify(nextCode: string) {
-    if (verifying || !nextCode) return
-    setError(null)
-    setVerifying(true)
-    try {
+  const verifyMutation = useMutation({
+    mutationFn: async (nextCode: string) => {
       const { error } =
         mode === "totp"
-          ? await twoFactor.verifyTotp({ code: nextCode, trustDevice })
-          : await twoFactor.verifyBackupCode({ code: nextCode, trustDevice })
+          ? await twoFactor.verifyTotp({ code: nextCode })
+          : await twoFactor.verifyBackupCode({ code: nextCode })
       if (error) {
-        setCode("")
-        setError(
+        throw new Error(
           mode === "totp"
-            ? "That code is invalid or expired. Try again."
-            : "That backup code is invalid or already used.",
+            ? error.message ?? "That code is invalid or expired. Try again."
+            : error.message ?? "That backup code is invalid or already used.",
         )
-        return
       }
-      router.push("/profile")
+    },
+    onSuccess: () => {
+      router.push(redirect)
       router.refresh()
-    } finally {
-      setVerifying(false)
-    }
-  }
+    },
+    onError: (mutationError: Error) => {
+      setCode("")
+      setError(mutationError.message)
+    },
+  })
 
+  function verify(nextCode: string) {
+    if (verifyMutation.isPending || !nextCode) return
+    setError(null)
+    verifyMutation.mutate(nextCode)
+  }
   return (
     <Card>
       <CardHeader>
@@ -68,7 +72,7 @@ export function TwoFactorForm() {
           variant="ghost"
           size="icon-sm"
           className="-ml-1.5 -mb-1"
-          render={<Link href="/" />}
+          render={<Link href="/signin" />}
         >
           <HugeiconsIcon icon={ArrowLeftIcon} />
           <span className="sr-only">Back to sign in</span>
@@ -87,34 +91,36 @@ export function TwoFactorForm() {
         <form
           onSubmit={(event) => {
             event.preventDefault()
-            void verify(code)
+            verify(code)
           }}
           className="flex flex-col gap-4"
         >
           {mode === "totp" ? (
-            <div className="flex flex-col items-start gap-1.5">
+            <div className="flex w-full flex-col gap-1.5">
               <InputOTP
                 id="code"
                 value={code}
                 onChange={(nextCode) => {
                   setCode(nextCode)
                   setError(null)
-                  if (nextCode.length === CODE_LENGTH) void verify(nextCode)
+                  if (nextCode.length === CODE_LENGTH) verify(nextCode)
                 }}
                 maxLength={CODE_LENGTH}
+                pattern={REGEXP_ONLY_DIGITS}
                 required
-                disabled={verifying}
+                disabled={verifyMutation.isPending}
+                containerClassName="w-full gap-2"
               >
-                <InputOTPGroup>
-                  <InputOTPSlot index={0} />
-                  <InputOTPSlot index={1} />
-                  <InputOTPSlot index={2} />
+                <InputOTPGroup className="flex-1">
+                  {Array.from({ length: 3 }).map((_, i) => (
+                    <InputOTPSlot key={i} index={i} className="size-10 flex-1 text-lg" />
+                  ))}
                 </InputOTPGroup>
                 <InputOTPSeparator />
-                <InputOTPGroup>
-                  <InputOTPSlot index={3} />
-                  <InputOTPSlot index={4} />
-                  <InputOTPSlot index={5} />
+                <InputOTPGroup className="flex-1">
+                  {Array.from({ length: 3 }).map((_, i) => (
+                    <InputOTPSlot key={i + 3} index={i + 3} className="size-10 flex-1 text-lg" />
+                  ))}
                 </InputOTPGroup>
               </InputOTP>
             </div>
@@ -131,23 +137,12 @@ export function TwoFactorForm() {
                 placeholder="xxxxx-xxxxx"
                 autoComplete="one-time-code"
                 required
-                disabled={verifying}
+                disabled={verifyMutation.isPending}
               />
             </div>
           )}
 
-          <div className="flex items-center gap-2 text-xs text-muted-foreground">
-            <Checkbox
-              id="trust-device"
-              checked={trustDevice}
-              onCheckedChange={(checked) => setTrustDevice(checked === true)}
-            />
-            <Label htmlFor="trust-device" className="font-normal">
-              Trust this device for 30 days
-            </Label>
-          </div>
-
-          <Button type="submit" size="lg" className="w-full" disabled={verifying}>
+          <Button type="submit" size="lg" className="w-full" disabled={verifyMutation.isPending}>
             Verify and continue
           </Button>
           {error && <p className="text-xs text-destructive">{error}</p>}

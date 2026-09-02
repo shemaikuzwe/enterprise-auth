@@ -61,7 +61,7 @@ export function Account() {
     mutationFn: async (provider: (typeof providers)[number]["id"]) => {
       const { error } = await authClient.linkSocial({
         provider,
-        callbackURL: "/profile",
+        callbackURL: "/settings/account",
       })
       if (error) throw error
     },

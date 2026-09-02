@@ -1,5 +1,6 @@
 "use client"
 
+import { useMutation } from "@tanstack/react-query"
 import { useState } from "react"
 import { useSearchParams } from "next/navigation"
 
@@ -7,18 +8,42 @@ import { useSession } from "@/components/session-provider"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { authClient } from "@/lib/auth-client"
-
 export default function DevicePage() {
   const searchParams = useSearchParams()
   const session = useSession()
   const [code, setCode] = useState(() =>
     searchParams.get("user_code") ?? ""
   )
-  const [loading, setLoading] = useState(false)
   const [approved, setApproved] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+  const deviceMutation = useMutation({
+    mutationFn: async (userCode: string) => {
+      const verification = await authClient.device({
+        query: { user_code: userCode },
+      })
+      if (verification.error) {
+        throw new Error(verification.error.error)
+      }
+
+      if (verification.data.status !== "pending") {
+        throw new Error("This device code has already been used.")
+      }
+
+      const approval = await authClient.device.approve({ userCode })
+      if (approval.error) {
+        throw new Error(approval.error.error ?? "Could not authorize this device.")
+      }
+    },
+    onSuccess: () => {
+      setApproved(true)
+    },
+    onError: (mutationError: Error) => {
+      setError(mutationError.message)
+    },
+  })
+
+  function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
     setError(null)
 
@@ -30,35 +55,11 @@ export default function DevicePage() {
 
     if (!session) {
       const returnPath = `/device?user_code=${encodeURIComponent(userCode)}`
-      window.location.href = `/?redirect=${encodeURIComponent(returnPath)}`
+      window.location.href = `/signin?redirect=${encodeURIComponent(returnPath)}`
       return
     }
 
-    setLoading(true)
-    try {
-      const verification = await authClient.device({
-        query: { user_code: userCode },
-      })
-      if (verification.error) {
-        setError(verification.error.error)
-        return
-      }
-
-      if (verification.data.status !== "pending") {
-        setError("This device code has already been used.")
-        return
-      }
-
-      const approval = await authClient.device.approve({ userCode })
-      if (approval.error) {
-        setError(approval.error.error ?? "Could not authorize this device.")
-        return
-      }
-
-      setApproved(true)
-    } finally {
-      setLoading(false)
-    }
+    deviceMutation.mutate(userCode)
   }
 
   if (approved) {
@@ -105,10 +106,9 @@ export default function DevicePage() {
         <Button
           type="submit"
           size="lg"
-          className="h-11 w-full rounded-full text-sm"
-          disabled={loading}
+          disabled={deviceMutation.isPending}
         >
-          {loading ? "Authorizing…" : session ? "Authorize device" : "Continue to sign in"}
+          {deviceMutation.isPending ? "Authorizing…" : session ? "Authorize device" : "Continue to sign in"}
         </Button>
 
         {error ? (

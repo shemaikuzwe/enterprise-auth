@@ -51,7 +51,7 @@ export function InviteMemberDialog({ organizationId }: { organizationId: string 
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger render={<Button variant="outline" size="sm" type="button" />}>
+      <DialogTrigger render={<Button className="w-full" type="button" />}>
         <HugeiconsIcon icon={UserAdd01Icon} data-icon="inline-start" />
         Invite
       </DialogTrigger>

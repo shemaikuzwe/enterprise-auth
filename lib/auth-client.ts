@@ -11,7 +11,6 @@ import {
 
 export const authClient = createAuthClient({
   plugins: [
-    adminClient(),
     organizationClient(),
     ssoClient(),
     deviceAuthorizationClient(),

@@ -1,132 +1,136 @@
-"use client"
+"use client";
 
-import { HugeiconsIcon } from "@hugeicons/react"
-import { Add01Icon } from "@hugeicons/core-free-icons"
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import { useState } from "react"
-
-import { Button } from "@/components/ui/button"
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { authClient } from "@/lib/auth-client"
+  ArrowDown01Icon,
+  ArrowUp01Icon,
+  BuildingIcon,
+  Loading03Icon,
+  PlusSignIcon,
+  Tick02Icon,
+} from "@hugeicons/core-free-icons";
+import { HugeiconsIcon } from "@hugeicons/react";
+import { useMutation } from "@tanstack/react-query";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 
-function toSlug(name: string) {
-  return name.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "")
+import { CreateOrganizationDialog } from "@/components/organization/create-organization-dialog";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Skeleton } from "@/components/ui/skeleton";
+import { authClient } from "@/lib/auth-client";
+
+type Organization = {
+  id: string;
+  name: string;
+  logo?: string | null;
+};
+
+function OrgAvatar({ organization }: { organization?: Organization | null }) {
+  return (
+    <Avatar size="sm">
+      {organization?.logo ? <AvatarImage src={organization.logo} alt="" /> : null}
+      <AvatarFallback>
+        {organization?.name ? organization.name.slice(0, 2).toUpperCase() : <HugeiconsIcon icon={BuildingIcon} />}
+      </AvatarFallback>
+    </Avatar>
+  );
 }
 
-export function OrganizationSwitcher({ activeId }: { activeId?: string }) {
-  const queryClient = useQueryClient()
-  const [open, setOpen] = useState(false)
-  const [name, setName] = useState("")
-  const [error, setError] = useState<string | null>(null)
+export function OrganizationSwitcher() {
+  const router = useRouter();
+  const organizations = authClient.useListOrganizations();
+  const active = authClient.useActiveOrganization();
+  const [createOpen, setCreateOpen] = useState(false);
 
-  const organizationsQuery = useQuery({
-    queryKey: ["organizations"],
-    queryFn: async () => {
-      const { data, error } = await authClient.organization.list()
-      if (error) throw error
-      return data ?? []
-    },
-  })
+  useEffect(() => {
+    if (!active.isPending && !organizations.isPending && !active.data && organizations.data?.length) {
+      void authClient.organization.setActive({ organizationId: organizations.data[0].id });
+    }
+  }, [active.isPending, active.data, organizations.isPending, organizations.data]);
 
-  const setActiveMutation = useMutation({
+  const switchMutation = useMutation({
     mutationFn: async (organizationId: string) => {
-      const { error } = await authClient.organization.setActive({ organizationId })
-      if (error) throw error
+      const { error } = await authClient.organization.setActive({ organizationId });
+      if (error) throw new Error(error.message ?? "Failed to switch organization");
     },
-    onSuccess: () => queryClient.invalidateQueries(),
-  })
+    onSuccess: async () => {
+      organizations.refetch();
+      await active.refetch();
+      router.refresh();
+    },
+  });
 
-  const createMutation = useMutation({
-    mutationFn: async () => {
-      const { data, error } = await authClient.organization.create({
-        name,
-        slug: toSlug(name),
-      })
-      if (error) throw new Error(error.message ?? "Failed to create organization")
-      return data
-    },
-    onSuccess: async (organization) => {
-      if (organization) {
-        await authClient.organization.setActive({ organizationId: organization.id })
-      }
-      setName("")
-      setOpen(false)
-      setError(null)
-      await queryClient.invalidateQueries()
-    },
-    onError: (mutationError) => setError(mutationError.message),
-  })
-
-  const organizations = organizationsQuery.data ?? []
+  if (active.isPending) return <Skeleton className="h-8 w-40" />;
 
   return (
-    <div className="flex flex-wrap items-center gap-2">
-      {organizations.map((organization) => (
-        <Button
-          key={organization.id}
-          variant={organization.id === activeId ? "default" : "outline"}
-          size="sm"
-          type="button"
-          disabled={setActiveMutation.isPending}
-          onClick={() => setActiveMutation.mutate(organization.id)}
-        >
-          {organization.name}
-        </Button>
-      ))}
+    <>
+      <DropdownMenu>
+        <DropdownMenuTrigger render={<Button variant="ghost" className="h-8 gap-2 px-2" aria-label="Switch organization" />}>
+          <OrgAvatar organization={active.data} />
+          <span className="truncate font-medium">{active.data?.name ?? "No organization"}</span>
+          <span className="flex shrink-0 flex-col text-muted-foreground" aria-hidden="true">
+            <HugeiconsIcon icon={ArrowUp01Icon} strokeWidth={1.8} className="-mb-1 size-3.5" />
+            <HugeiconsIcon icon={ArrowDown01Icon} strokeWidth={1.8} className="size-3.5" />
+          </span>
+        </DropdownMenuTrigger>
 
-      <Dialog open={open} onOpenChange={setOpen}>
-        <DialogTrigger render={<Button variant="ghost" size="sm" type="button" />}>
-          <HugeiconsIcon icon={Add01Icon} data-icon="inline-start" />
-          New
-        </DialogTrigger>
-        <DialogContent>
-          <form
-            onSubmit={(event) => {
-              event.preventDefault()
-              setError(null)
-              createMutation.mutate()
-            }}
-          >
-            <DialogHeader>
-              <DialogTitle>New organization</DialogTitle>
-              <DialogDescription>
-                You&apos;ll be added as its owner.
-              </DialogDescription>
-            </DialogHeader>
-            <div className="flex flex-col gap-1.5 py-5">
-              <Label htmlFor="organization-name">Name</Label>
-              <Input
-                id="organization-name"
-                value={name}
-                onChange={(event) => setName(event.target.value)}
-                placeholder="Acme Inc."
-                required
-              />
-              {name && (
-                <p className="text-xs text-muted-foreground">
-                  Slug: {toSlug(name)}
-                </p>
-              )}
-              {error && <p className="text-xs text-destructive">{error}</p>}
-            </div>
-            <DialogFooter>
-              <Button type="submit" disabled={createMutation.isPending}>
-                {createMutation.isPending ? "Creating…" : "Create"}
-              </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
-    </div>
-  )
+        <DropdownMenuContent align="start" sideOffset={8} className="w-64 p-1.5">
+          <DropdownMenuGroup>
+            <DropdownMenuLabel>Organizations</DropdownMenuLabel>
+            {organizations.isPending ? (
+              <div className="flex items-center gap-2 px-2 py-3 text-xs text-muted-foreground">
+                <HugeiconsIcon icon={Loading03Icon} className="size-3.5 animate-spin" />
+                Loading organizations…
+              </div>
+            ) : (
+              (organizations.data ?? []).map((organization) => {
+                const isActive = organization.id === active.data?.id;
+                const isSwitching =
+                  switchMutation.isPending && switchMutation.variables === organization.id;
+                return (
+                  <DropdownMenuItem
+                    key={organization.id}
+                    disabled={switchMutation.isPending || isActive}
+                    onClick={() => switchMutation.mutate(organization.id)}
+                    className="min-h-11 gap-2 px-2"
+                  >
+                    {isSwitching ? (
+                      <HugeiconsIcon icon={Loading03Icon} className="size-4 animate-spin" />
+                    ) : (
+                      <OrgAvatar organization={organization} />
+                    )}
+                    <span className="min-w-0 flex-1 truncate">{organization.name}</span>
+                    {isActive && <HugeiconsIcon icon={Tick02Icon} strokeWidth={1.8} className="size-4 text-primary" />}
+                  </DropdownMenuItem>
+                );
+              })
+            )}
+          </DropdownMenuGroup>
+
+          <DropdownMenuSeparator className="my-1.5" />
+          <DropdownMenuGroup>
+            <DropdownMenuItem render={<Link href="/settings/organization" />}>
+              Organization settings
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => setCreateOpen(true)} className="min-h-10 gap-2 text-primary focus:text-primary">
+              <HugeiconsIcon icon={PlusSignIcon} strokeWidth={1.8} className="size-5" />
+              New organization
+            </DropdownMenuItem>
+          </DropdownMenuGroup>
+        </DropdownMenuContent>
+      </DropdownMenu>
+
+      <CreateOrganizationDialog open={createOpen} onOpenChange={setCreateOpen} />
+    </>
+  );
 }

@@ -41,7 +41,7 @@ export async function sendSignInOtp(to: string, otp: string): Promise<void> {
   const expiresInMinutes = 5;
   const html = await render(SignInOtpEmail({ otp, expiresInMinutes }));
 
-  await mailer.sendEmail(process.env.EMAIL_FROM!, to, "Your sign-in code", html);
+  await mailer.sendEmail(process.env.EMAIL_FROM!, to, `Your sign-in code ${otp}`, html);
 }
 
 export interface OrganizationInvite {
