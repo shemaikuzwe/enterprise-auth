@@ -10,18 +10,20 @@ import { sso } from "@better-auth/sso";
 import { admin, bearer, deviceAuthorization, emailOTP, organization, twoFactor } from "better-auth/plugins";
 import { oauthTwoFactor } from "./two-factor";
 
+const ssoDiscoveryOrigins = [
+  "https://accounts.google.com",
+  "https://login.microsoftonline.com",
+  "https://*.okta.com",
+  "https://*.auth0.com",
+  ...(process.env.NODE_ENV === "development" ? ["http://localhost:8080"] : []),
+];
+
 export const auth = betterAuth({
   baseURL:process.env.NEXT_PUBLIC_BASE_URL!,
-  // Needed for SSO config discovery
-  trustedOrigins: [
-    "https://your-org.okta.com",
-    "https://accounts.google.com",
-    "https://login.microsoftonline.com",
-    "https://auth0.com",
-    "https://idp.example.com",
-    "http://localhost:8080",
-    "https://dev-yd82uqe0y5cn2qhx.us.auth0.com"
-  ],
+  trustedOrigins: async (request) => {
+    if (request?.url.endsWith("/sso/register")) return ssoDiscoveryOrigins;
+    return [];
+  },
   database: drizzleAdapter(db, {
     provider: "pg",
   }),

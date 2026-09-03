@@ -19,6 +19,7 @@ export default function OrganizationSettingsPage() {
   const roles = (role ?? "").split(",").map((entry) => entry.trim());
   const canManage = roles.includes("owner") || roles.includes("admin");
   const organizationId = organization?.id;
+  const organizationSlug = organization?.slug;
 
   return (
     <>
@@ -36,7 +37,7 @@ export default function OrganizationSettingsPage() {
         )}
       </section>
 
-      {activeOrganization.isPending ? null : !organizationId ? (
+      {activeOrganization.isPending ? null : !organizationId || !organizationSlug ? (
         <p className="text-sm text-muted-foreground">
           You&apos;re not part of an organization yet.
         </p>
@@ -63,7 +64,10 @@ export default function OrganizationSettingsPage() {
 
           {canManage && (
             <TabsContent value="sso">
-              <SsoProviders organizationId={organizationId} />
+              <SsoProviders
+                organizationId={organizationId}
+                organizationSlug={organizationSlug}
+              />
             </TabsContent>
           )}
         </Tabs>

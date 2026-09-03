@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils";
 import { getSession } from "@/lib/auth-client";
 import { headers } from "next/headers";
 import { SessionProvider } from "@/components/session-provider";
+import { Toaster } from "@/components/ui/sonner";
 
 const inter = Inter({subsets:['latin'],variable:'--font-sans'});
 
@@ -42,6 +43,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
           enableSystem
           disableTransitionOnChange
         >
+          <Toaster/>
           <QueryProvider>
             <SessionProvider session={session}>
               {children}
