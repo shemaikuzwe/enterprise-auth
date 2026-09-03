@@ -25,6 +25,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
+import { resolveIdpMetadata } from "@/lib/actions"
 import { authClient } from "@/lib/auth-client"
 import CopyField from "../ui/copy-field"
 
@@ -71,10 +72,10 @@ const ssoFormSchema = z.discriminatedUnion("protocol", [
     idpMetadata: z
       .string()
       .trim()
-      .min(1, "IdP metadata XML is required.")
+      .min(1, "A metadata URL or metadata XML is required.")
       .refine(
-        (value) => value.includes("EntityDescriptor"),
-        "This does not look like SAML metadata XML.",
+        (value) => /^https?:\/\//i.test(value) || value.includes("EntityDescriptor"),
+        "Enter a metadata URL, or paste the metadata XML.",
       ),
   }),
 ])
@@ -94,7 +95,22 @@ function toAcsUrl(providerId: string) {
 }
 
 function toSpEntityId(providerId: string) {
-  return `${process.env.NEXT_PUBLIC_BASE_URL}/api/auth/sso/saml2/sp/metadata?providerId=${encodeURIComponent(providerId)}`
+  return `urn:enterprise-auth:sp:${providerId}`
+}
+
+async function getProtocolConfig(values: SsoFormValues, providerId: string) {
+  if (values.protocol === "oidc") {
+    return {
+      issuer: values.issuer,
+      oidcConfig: { clientId: values.clientId, clientSecret: values.clientSecret },
+    }
+  }
+  const { metadata, entryPoint } = await resolveIdpMetadata(values.idpMetadata)
+  return {
+    // For SAML the top-level issuer is our own SP entity ID.
+    issuer: toSpEntityId(providerId),
+    samlConfig: { entryPoint, idpMetadata: { metadata } },
+  }
 }
 
 export function SsoProviders({
@@ -134,21 +150,7 @@ export function SsoProviders({
         providerId,
         domain: values.domain,
         organizationId,
-        ...(values.protocol === "oidc"
-          ? {
-              issuer: values.issuer,
-              oidcConfig: {
-                clientId: values.clientId,
-                clientSecret: values.clientSecret,
-              },
-            }
-          : {
-              // For SAML the top-level issuer is our own SP entity ID.
-              issuer: toSpEntityId(providerId),
-              samlConfig: {
-                idpMetadata: { metadata: values.idpMetadata },
-              },
-            }),
+        ...(await getProtocolConfig(values, providerId)),
       })
       if (error) throw new Error(error.message ?? "Failed to register the provider")
     },
@@ -388,17 +390,18 @@ export function SsoProviders({
             control={form.control}
             render={({ field, fieldState }) => (
               <Field data-invalid={fieldState.invalid}>
-                <FieldLabel htmlFor={field.name}>IdP metadata XML</FieldLabel>
+                <FieldLabel htmlFor={field.name}>Idp metadata</FieldLabel>
                 <Textarea
                   {...field}
                   id={field.name}
-                  rows={8}
-                  placeholder="Paste the SAML metadata XML your Idp gives you"
+                  rows={3}
+                  placeholder="https://your-org.okta.com/app/exk.../sso/saml/metadata"
                   aria-invalid={fieldState.invalid}
                   disabled={registerMutation.isPending}
                 />
                 <FieldDescription>
-                  The sign-on URL and signing certificate are read from this metadata.
+                  Paste the metadata URL, or the metadata XML itself if your Idp only offers a
+                  download.
                 </FieldDescription>
                 {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
               </Field>
