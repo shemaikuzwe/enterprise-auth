@@ -1,4 +1,5 @@
 import { createAuthClient } from "better-auth/react";
+import { passkeyClient } from "@better-auth/passkey/client";
 import { ssoClient } from "@better-auth/sso/client";
 import {
   adminClient,
@@ -16,6 +17,7 @@ export const authClient = createAuthClient({
     ssoClient(),
     deviceAuthorizationClient(),
     emailOTPClient(),
+    passkeyClient(),
     twoFactorClient({
       twoFactorPage:"/2fa",
       onTwoFactorRedirect() {

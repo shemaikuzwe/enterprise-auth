@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import { EmailForm } from "@/components/auth/email-form";
+import { PasskeyForm } from "@/components/auth/passkey-form";
 import { OAuthButtons } from "@/components/oauth-buttons";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
@@ -24,7 +25,8 @@ export default async function SignInPage({ searchParams }: PageProps<"/signin">)
           <Separator className="flex-1" />
           <span className="text-xs text-muted-foreground">or continue with</span>
           <Separator className="flex-1" />
-        </div>
+        </div>       
+        <PasskeyForm redirect={destination} />
         <EmailForm
           mode="signin"
           redirect={destination}

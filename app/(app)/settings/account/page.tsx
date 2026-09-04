@@ -4,6 +4,7 @@ import { HugeiconsIcon } from "@hugeicons/react";
 import { CheckmarkBadge02Icon } from "@hugeicons/core-free-icons";
 
 import { Account } from "@/components/account";
+import { PasskeySettings } from "@/components/auth/passkey-settings";
 import { TwoFactorSettings } from "@/components/auth/two-factor-settings";
 import { ProfileForm } from "@/components/settings/profile-form";
 import { Session } from "@/components/session";
@@ -67,8 +68,9 @@ export default function AccountSettingsPage() {
           <Account />
         </TabsContent>
 
-        <TabsContent value="security">
+        <TabsContent value="security" className="flex flex-col gap-8">
           <TwoFactorSettings />
+          <PasskeySettings />
         </TabsContent>
       </Tabs>
     </>

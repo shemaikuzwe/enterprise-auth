@@ -86,7 +86,7 @@ export function EmailForm({
             type="email"
             name="email"
             placeholder="you@company.com"
-            autoComplete="email"
+            autoComplete="email webauthn"
             required
             value={email}
             onChange={(event) => setEmail(event.target.value)}

@@ -7,6 +7,7 @@ import { sendOrganizationInvite, sendSignInNotification, sendSignInOtp } from ".
 
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "@better-auth/drizzle-adapter";
+import { getAuthenticatorName, passkey } from "@better-auth/passkey";
 import { sso } from "@better-auth/sso";
 import { admin, bearer, deviceAuthorization, emailOTP, organization, twoFactor } from "better-auth/plugins";
 import { oauthTwoFactor } from "./two-factor";
@@ -18,6 +19,19 @@ const ssoDiscoveryOrigins = [
   "https://*.auth0.com",
   ...(process.env.NODE_ENV === "development" ? ["http://localhost:8080"] : []),
 ];
+
+function getPasskeyRP() {
+  const base = process.env.NEXT_PUBLIC_BASE_URL;
+  if (!base) return {};
+  try {
+    const url = new URL(base);
+    // localhost works with Better Auth defaults; only pin RP for real domains.
+    if (url.hostname === "localhost" || url.hostname === "127.0.0.1") return {};
+    return { rpID: url.hostname, origin: url.origin };
+  } catch {
+    return {};
+  }
+}
 
 export const auth = betterAuth({
   baseURL:process.env.NEXT_PUBLIC_BASE_URL!,
@@ -106,6 +120,16 @@ export const auth = betterAuth({
   },
   plugins: [
     bearer(),
+    passkey({
+      rpName: "Acme Inc.",
+      ...getPasskeyRP(),
+      registration: {
+        // default label when the user doesn't name their passkey.
+        afterVerification: async ({ verification }) => ({
+          name: getAuthenticatorName(verification.registrationInfo?.aaguid),
+        }),
+      },
+    }),
     twoFactor({ issuer: "Acme Inc.", allowPasswordless: true }),
     oauthTwoFactor(),
     admin(),
