@@ -3,6 +3,7 @@ import {
   BuildingIcon,
   Settings01Icon,
   ShieldUserIcon,
+  UsersIcon,
 } from "@hugeicons/core-free-icons";
 import { headers } from "next/headers";
 import Link from "next/link";
@@ -78,6 +79,25 @@ export default async function HomePage() {
             </Button>
           </CardContent>
         </Card>
+
+        {(session?.user as { role?: string | null })?.role === "admin" && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <HugeiconsIcon icon={UsersIcon} className="size-4 text-muted-foreground" />
+                User Management
+              </CardTitle>
+              {/*<CardDescription>Se.</CardDescription>*/}
+            </CardHeader>
+            <CardContent className="flex flex-col gap-3">
+              <p className="text-sm font-medium">All users</p>
+              <Button variant="outline" size="sm" className="self-start" render={<Link href="/users" />}>
+                <HugeiconsIcon icon={UsersIcon} data-icon="inline-start" />
+                Manage users
+              </Button>
+            </CardContent>
+          </Card>
+        )}
       </section>
     </>
   );

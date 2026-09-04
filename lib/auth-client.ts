@@ -11,6 +11,7 @@ import {
 
 export const authClient = createAuthClient({
   plugins: [
+    adminClient(),
     organizationClient(),
     ssoClient(),
     deviceAuthorizationClient(),
@@ -28,6 +29,10 @@ export const { signIn, signUp, signOut, useSession, getSession, emailOtp, twoFac
 
 export type User = typeof authClient.$Infer.Session.user & {
   twoFactorEnabled?: boolean | null;
+  role?: string | null;
+  banned?: boolean | null;
+  banReason?: string | null;
+  banExpires?: Date | null;
 };
 
 export type Session = Omit<typeof authClient.$Infer.Session, "user"> & { user: User };

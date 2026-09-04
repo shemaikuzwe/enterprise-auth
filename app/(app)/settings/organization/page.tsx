@@ -4,7 +4,7 @@ import { authClient } from "@/lib/auth-client";
 import { GeneralSettings } from "@/components/organization/general-settings";
 import { Invitations } from "@/components/organization/invitations";
 import { Members } from "@/components/organization/members";
-import { SsoProviders } from "@/components/organization/sso-providers";
+import { SsoProviders } from "@/components/organization/providers";
 import { useSession } from "@/components/session-provider";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
