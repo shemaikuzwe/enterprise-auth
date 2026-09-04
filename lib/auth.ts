@@ -2,6 +2,7 @@ import { UAParser } from "ua-parser-js";
 import { eq } from "drizzle-orm";
 
 import { db, schema } from "./db";
+import { ensureTeam } from "./team";
 import { sendOrganizationInvite, sendSignInNotification, sendSignInOtp } from "./email/send";
 
 import { betterAuth } from "better-auth";
@@ -20,9 +21,17 @@ const ssoDiscoveryOrigins = [
 
 export const auth = betterAuth({
   baseURL:process.env.NEXT_PUBLIC_BASE_URL!,
+  onAPIError: {
+    errorURL:"/signin"
+  },
   trustedOrigins: async (request) => {
     if (request?.url.endsWith("/sso/register")) return ssoDiscoveryOrigins;
-    return [];
+    return ["http://localhost:3000","http://localhost:8080"];
+  },
+  account: {
+    accountLinking: {
+      enabled:true
+    }
   },
   database: drizzleAdapter(db, {
     provider: "pg",
@@ -38,8 +47,39 @@ export const auth = betterAuth({
     }
   },
   databaseHooks: {
+    user: {
+      create: {
+        after: async (user) => {
+          try {
+            await ensureTeam(user.id, { name: user.name });
+          } catch (error) {
+            console.error("Failed to create default organization for user", user.id, error);
+          }
+        },
+      },
+    },
     session: {
       create: {
+        before: async (session) => {
+            if (!session.userId || (session as { activeOrganizationId?: string | null }).activeOrganizationId) return;
+            try {
+              const [user] = await db
+                .select()
+                .from(schema.user)
+                .where(eq(schema.user.id, session.userId))
+                .limit(1);
+              const orgId: string | null = await ensureTeam(session.userId, { name: user?.name });
+              if (!orgId) return;
+              return {
+                data: {
+                  activeOrganizationId: orgId,
+                },
+              };
+            }
+            catch (error) {
+              console.error("Failed to set default active organization", session.userId, error);
+            }
+        },
         after: async (session) => {
           // Skip admin-impersonated sessions.
           if (!session.userId || session.impersonatedBy) return;
@@ -89,6 +129,8 @@ export const auth = betterAuth({
       },
     }),
     sso({
+      //Dangerous this should be replaced with domain verification in production
+      trustEmailVerified:true,
       organizationProvisioning: { defaultRole: "member" },
     }),
   ],

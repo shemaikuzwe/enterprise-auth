@@ -1,13 +1,11 @@
 import { headers } from "next/headers";
 import { type NextRequest, NextResponse } from "next/server";
 
-import { auth } from "./lib/auth";
 import { getSession } from "./lib/auth-client";
 import { redirect } from "./lib/utils";
 
-const protectedPaths = ["/home", "/settings", "/onboarding"];
+const protectedPaths = ["/home", "/settings"];
 const authPaths = ["/signin", "/signup"];
-const onboardingPaths = ["/home", "/settings"];
 
 export async function proxy(request: NextRequest) {
   const { pathname, searchParams } = request.nextUrl;
@@ -24,15 +22,6 @@ export async function proxy(request: NextRequest) {
     const url = new URL("/signin", request.url);
     url.searchParams.set("redirect", pathname);
     return NextResponse.redirect(url);
-  }
-
-  if (isAuthenticated && onboardingPaths.some((path) => pathname.startsWith(path))) {
-    const organizations = await auth.api.listOrganizations({
-      headers: request.headers,
-    });
-    if (organizations.length === 0) {
-      return NextResponse.redirect(new URL("/onboarding", request.url));
-    }
   }
 
   if (authPaths.some((path) => pathname.startsWith(path)) && isAuthenticated) {
