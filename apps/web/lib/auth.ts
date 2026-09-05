@@ -42,7 +42,7 @@ export const auth = betterAuth({
   },
   trustedOrigins: async (request) => {
     if (request?.url.endsWith("/sso/register")) return ssoDiscoveryOrigins;
-    return ["http://localhost:3000","http://localhost:8080"];
+    return ["http://localhost:3000","http://localhost:8080","http://localhost:3001"];
   },
   account: {
     accountLinking: {
