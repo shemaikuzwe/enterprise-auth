@@ -10,6 +10,7 @@ Enterprise ready auth example using [Better Auth](https://www.better-auth.com).
 
 ## Auth features
 
+- **OAuth Provider**: act as OIDC/OAuth provider for third-party apps (login, consent, client management)
 - **SSO**: per-organization SAML/OIDC providers (Google, Microsoft, Okta, Auth0,Keycloak).
 - **Email Magic Links**: passwordless login using email links
 - **OAuth**: Google + GitHub
