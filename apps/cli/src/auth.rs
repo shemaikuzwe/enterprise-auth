@@ -80,6 +80,7 @@ pub enum AuthEvent {
         user_code: String,
         verification_uri: String,
         verification_uri_complete: String,
+        expires_in: u64,
     },
     Authenticated(AuthSession),
     LoggedOut,
@@ -130,6 +131,7 @@ impl Auth {
                 user_code: login.user_code,
                 verification_uri: login.verification_uri,
                 verification_uri_complete: login.verification_uri_complete,
+                expires_in: login.expires_in,
             })
             .is_err()
         {
@@ -254,7 +256,11 @@ impl Auth {
         }
     }
 
-    async fn get_session(&self, access_token: String, expires_in: u64) -> Result<AuthSession, String> {
+    async fn get_session(
+        &self,
+        access_token: String,
+        expires_in: u64,
+    ) -> Result<AuthSession, String> {
         #[derive(Deserialize)]
         struct UserInfoResponse {
             sub: String,

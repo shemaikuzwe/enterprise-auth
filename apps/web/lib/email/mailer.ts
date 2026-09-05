@@ -48,7 +48,7 @@ class MailService {
   ): Promise<void> {
     try {
       console.debug(`Sending email ${from} ${to} ${subject}`);
-      if (process.env.NODE_ENV !== "production") return;
+      // if (process.env.NODE_ENV !== "production") return;
       const mailOptions: nodemailer.SendMailOptions = {
         from,
         to: Array.isArray(to) ? to.join(",") : to,
