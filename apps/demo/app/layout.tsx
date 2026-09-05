@@ -1,23 +1,21 @@
 import type { Metadata } from "next";
+import { Geist_Mono, Inter } from "next/font/google";
+
+import "./globals.css";
+import { cn } from "@/lib/utils";
+
+const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
+const geistMono = Geist_Mono({ subsets: ["latin"], variable: "--font-geist-mono" });
 
 export const metadata: Metadata = {
-  title: "Demo client",
-  description: "OAuth test harness for the enterprise-auth provider",
+  title: "Acme Demo",
+  description: "OAuth client for the enterprise-auth provider",
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="en">
-      <body
-        style={{
-          fontFamily: "system-ui, sans-serif",
-          maxWidth: 720,
-          margin: "0 auto",
-          padding: "48px 24px",
-        }}
-      >
-        {children}
-      </body>
+    <html lang="en" className={cn("h-full antialiased font-sans", inter.variable, geistMono.variable)}>
+      <body className="min-h-full">{children}</body>
     </html>
   );
 }

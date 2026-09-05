@@ -120,6 +120,9 @@ export const auth = betterAuth({
       },
     },
   },
+  advanced: {
+    cookiePrefix: "acme",
+  },
   plugins: [
     bearer(),
     jwt(),
