@@ -1,5 +1,6 @@
 import { HugeiconsIcon } from "@hugeicons/react";
 import {
+  AppStoreIcon,
   BuildingIcon,
   Settings01Icon,
   ShieldUserIcon,
@@ -76,6 +77,23 @@ export default async function HomePage() {
             <Button variant="outline" size="sm" className="self-start" render={<Link href="/settings/account" />}>
               <HugeiconsIcon icon={ShieldUserIcon} data-icon="inline-start" />
               Account settings
+            </Button>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <HugeiconsIcon icon={AppStoreIcon} className="size-4 text-muted-foreground" />
+              Connected apps
+            </CardTitle>
+            <CardDescription>Review third-party access to your account.</CardDescription>
+          </CardHeader>
+          <CardContent className="flex flex-col gap-3">
+            <p className="text-sm font-medium">Apps you signed in to</p>
+            <Button variant="outline" size="sm" className="self-start" render={<Link href="/settings/applications" />}>
+              <HugeiconsIcon icon={AppStoreIcon} data-icon="inline-start" />
+              Manage connected apps
             </Button>
           </CardContent>
         </Card>

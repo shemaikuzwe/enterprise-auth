@@ -221,5 +221,6 @@ impl Widget for &App {
 
 #[tokio::main]
 async fn main() -> io::Result<()> {
+    dotenv::dotenv().ok();
     ratatui::run(|terminal| App::default().run(terminal))
 }

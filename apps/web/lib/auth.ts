@@ -151,9 +151,6 @@ export const auth = betterAuth({
       signup: { page: "/signup" },
       scopes: ["openid", "profile", "email", "offline_access"],
       clientPrivileges: async ({ user }) => user?.role === "admin",
-      cachedTrustedClients: new Set(
-        [process.env.CLI_OAUTH_CLIENT_ID].filter(Boolean) as string[],
-      ),
     }),
     oauthDeviceAuthorization({ verificationUri: "/device" }),
     organization({

@@ -41,6 +41,7 @@ import { createOAuthClient } from "@/lib/actions";
 import { SCOPE_DESCRIPTIONS } from "@/lib/oauth-scopes";
 import {
   createClientSchema,
+  GRANT_TYPE_DESCRIPTIONS,
   type CreateClientValues,
 } from "@/lib/validations/oauth";
 
@@ -62,12 +63,13 @@ interface ClientDialogProps {
 }
 
 const SCOPES = Object.keys(SCOPE_DESCRIPTIONS);
+const GRANT_TYPES = Object.keys(GRANT_TYPE_DESCRIPTIONS);
 
 function SecretOnce({ secret }: { secret: string }) {
   return (
     <div className="flex flex-col gap-2 rounded-lg border border-amber-200 bg-amber-50 p-3 dark:border-amber-500/30 dark:bg-amber-500/10">
       <p className="text-xs font-medium text-amber-800 dark:text-amber-300">
-        Copy this client secret now — you won&apos;t see it again.
+        Copy this client secret now you won&apos;t see it again.
       </p>
       <CopyField value={secret} copyLabel="Copy client secret" />
     </div>
@@ -92,6 +94,7 @@ export function CreateDialog({
       logo_uri: "",
       application_type: "web",
       token_endpoint_auth_method: "client_secret_basic",
+      grant_types: ["authorization_code", "refresh_token"],
       scope: ["openid", "profile", "email"],
       skip_consent: false,
     },
@@ -118,12 +121,24 @@ export function CreateDialog({
   }
 
   const selectedScopes = form.watch("scope");
+  const selectedGrantTypes = form.watch("grant_types");
 
   function toggleScope(scope: string, checked: boolean) {
     const current = form.getValues("scope");
     form.setValue(
       "scope",
       (checked ? [...current, scope] : current.filter((s) => s !== scope)) as CreateClientValues["scope"],
+      { shouldValidate: true },
+    );
+  }
+
+  function toggleGrantType(grantType: string, checked: boolean) {
+    const current = form.getValues("grant_types");
+    form.setValue(
+      "grant_types",
+      (checked
+        ? [...current, grantType]
+        : current.filter((g) => g !== grantType)) as CreateClientValues["grant_types"],
       { shouldValidate: true },
     );
   }
@@ -228,6 +243,32 @@ export function CreateDialog({
                   </SelectContent>
                 </Select>
               </div>
+            </div>
+            <div className="flex flex-col gap-2">
+              <Label>Grant types</Label>
+              {GRANT_TYPES.map((grantType) => (
+                <label key={grantType} className="flex cursor-pointer items-start gap-2.5 text-sm">
+                  <Checkbox
+                    checked={selectedGrantTypes.includes(
+                      grantType as CreateClientValues["grant_types"][number],
+                    )}
+                    onCheckedChange={(checked) => toggleGrantType(grantType, checked === true)}
+                    disabled={createMutation.isPending}
+                    className="mt-0.5"
+                  />
+                  <span>
+                    <span className="font-mono text-xs break-all">{grantType}</span>
+                    <span className="block text-xs text-muted-foreground">
+                      {GRANT_TYPE_DESCRIPTIONS[grantType]}
+                    </span>
+                  </span>
+                </label>
+              ))}
+              {form.formState.errors.grant_types && (
+                <p className="text-xs text-destructive">
+                  {form.formState.errors.grant_types.message}
+                </p>
+              )}
             </div>
             <div className="flex flex-col gap-2">
               <Label>Scopes</Label>

@@ -109,7 +109,7 @@ impl Auth {
             client: reqwest::Client::new(),
             base_url: "http://localhost:3000/api/auth".into(),
             client_id: std::env::var("ENTERPRISE_AUTH_CLIENT_ID")
-                .unwrap_or_else(|_| "JkHHwqVJcDoRiXSOKpqslmBnAnGQHWNo".into()),
+                .expect("ENTERPRISE_AUTH_CLIENT_ID not set"),
         }
     }
 

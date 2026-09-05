@@ -36,6 +36,11 @@ export async function emailLookup(email: string): Promise<LookupResult> {
     return { kind: "unknown" } satisfies LookupResult;
 }
 
+function parseRedirectUris(input: string) {
+  const uris = input.split("\n").map((u) => u.trim()).filter(Boolean);
+  return uris.length > 0 ? uris : undefined;
+}
+
 export async function createOAuthClient(values: CreateClientValues) {
   const requestHeaders = await headers();
   const session = await auth.api.getSession({ headers: requestHeaders });
@@ -47,9 +52,10 @@ export async function createOAuthClient(values: CreateClientValues) {
     body: {
       client_name: values.client_name,
       logo_uri: values.logo_uri || undefined,
-      redirect_uris: values.redirect_uris.split("\n").map((u) => u.trim()).filter(Boolean),
+      redirect_uris: parseRedirectUris(values.redirect_uris),
       application_type: values.application_type,
       token_endpoint_auth_method: values.token_endpoint_auth_method,
+      grant_types: values.grant_types,
       scope: values.scope.join(" "),
       skip_consent: values.skip_consent,
     },
