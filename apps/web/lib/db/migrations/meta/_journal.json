@@ -43,6 +43,13 @@
       "when": 1788552264923,
       "tag": "0005_pink_legion",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1788618200584,
+      "tag": "0006_tranquil_sunfire",
+      "breakpoints": true
     }
   ]
 }

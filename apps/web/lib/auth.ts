@@ -9,7 +9,8 @@ import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "@better-auth/drizzle-adapter";
 import { getAuthenticatorName, passkey } from "@better-auth/passkey";
 import { sso } from "@better-auth/sso";
-import { admin, bearer, deviceAuthorization, emailOTP, oneTap, organization, twoFactor } from "better-auth/plugins";
+import { admin, bearer, emailOTP, jwt, oneTap, organization, twoFactor } from "better-auth/plugins";
+import { oauthDeviceAuthorization, oauthProvider } from "@better-auth/oauth-provider";
 import { oauthTwoFactor } from "./two-factor";
 
 const ssoDiscoveryOrigins = [
@@ -35,6 +36,7 @@ function getPasskeyRP() {
 
 export const auth = betterAuth({
   baseURL:process.env.NEXT_PUBLIC_BASE_URL!,
+  disabledPaths: ["/token"],
   onAPIError: {
     errorURL:"/signin"
   },
@@ -120,6 +122,7 @@ export const auth = betterAuth({
   },
   plugins: [
     bearer(),
+    jwt(),
     oneTap({
       clientId: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID!,
     }),
@@ -142,9 +145,17 @@ export const auth = betterAuth({
         await sendSignInOtp(email, otp);
       },
     }),
-    deviceAuthorization({
-      verificationUri:"/device"
+    oauthProvider({
+      loginPage: "/signin",
+      consentPage: "/consent",
+      signup: { page: "/signup" },
+      scopes: ["openid", "profile", "email", "offline_access"],
+      clientPrivileges: async ({ user }) => user?.role === "admin",
+      cachedTrustedClients: new Set(
+        [process.env.CLI_OAUTH_CLIENT_ID].filter(Boolean) as string[],
+      ),
     }),
+    oauthDeviceAuthorization({ verificationUri: "/device" }),
     organization({
       async sendInvitationEmail({ id, email, organization, inviter }) {
         await sendOrganizationInvite({

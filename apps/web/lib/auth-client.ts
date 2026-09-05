@@ -1,22 +1,24 @@
 import { createAuthClient } from "better-auth/react";
 import { passkeyClient } from "@better-auth/passkey/client";
 import { ssoClient } from "@better-auth/sso/client";
+import { oauthProviderClient } from "@better-auth/oauth-provider/client";
 import {
   adminClient,
-  deviceAuthorizationClient,
   emailOTPClient,
   oneTapClient,
   organizationClient,
   twoFactorClient,
 } from "better-auth/client/plugins";
+import { oauthDeviceAuthorizationClient } from "@better-auth/oauth-provider/client";
 
 
 export const authClient = createAuthClient({
   plugins: [
+    oauthProviderClient(),
     adminClient(),
     organizationClient(),
     ssoClient(),
-    deviceAuthorizationClient(),
+    oauthDeviceAuthorizationClient(),
     emailOTPClient(),
     oneTapClient({
       clientId: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID!,

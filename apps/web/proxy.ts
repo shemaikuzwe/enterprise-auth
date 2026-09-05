@@ -4,7 +4,7 @@ import { type NextRequest, NextResponse } from "next/server";
 import { getSession } from "./lib/auth-client";
 import { redirect } from "./lib/utils";
 
-const protectedPaths = ["/home", "/settings", "/users"];
+const protectedPaths = ["/home", "/settings", "/users", "/applications"];
 const authPaths = ["/signin", "/signup"];
 
 export async function proxy(request: NextRequest) {
