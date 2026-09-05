@@ -9,7 +9,7 @@ import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "@better-auth/drizzle-adapter";
 import { getAuthenticatorName, passkey } from "@better-auth/passkey";
 import { sso } from "@better-auth/sso";
-import { admin, bearer, deviceAuthorization, emailOTP, organization, twoFactor } from "better-auth/plugins";
+import { admin, bearer, deviceAuthorization, emailOTP, oneTap, organization, twoFactor } from "better-auth/plugins";
 import { oauthTwoFactor } from "./two-factor";
 
 const ssoDiscoveryOrigins = [
@@ -56,7 +56,7 @@ export const auth = betterAuth({
       clientSecret: process.env.GITHUB_CLIENT_SECRET!,
     },
     google: {
-      clientId: process.env.GOOGLE_CLIENT_ID!,
+      clientId: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID!,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
     }
   },
@@ -120,6 +120,9 @@ export const auth = betterAuth({
   },
   plugins: [
     bearer(),
+    oneTap({
+      clientId: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID!,
+    }),
     passkey({
       rpName: "Acme Inc.",
       ...getPasskeyRP(),

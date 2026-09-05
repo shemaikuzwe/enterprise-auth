@@ -29,3 +29,15 @@ pnpm dev               # http://localhost:3000
 ```
 
 Useful scripts: `pnpm db:studio`, `pnpm db:generate`, `pnpm email:dev` (preview mail templates on :3001).
+
+## Local Keycloak (SSO dev)
+
+```bash
+docker run -p 8080:8080 \
+  -e KC_BOOTSTRAP_ADMIN_USERNAME=admin \
+  -e KC_BOOTSTRAP_ADMIN_PASSWORD=admin \
+  -v keycloak_data:/opt/keycloak/data \
+  quay.io/keycloak/keycloak:latest start-dev
+```
+
+Admin console: http://localhost:8080 (admin / admin).

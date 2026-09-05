@@ -5,6 +5,7 @@ import { useMutation } from "@tanstack/react-query"
 import { useState } from "react"
 
 import { Button } from "@/components/ui/button"
+import { useOneTap } from "@/components/auth/use-one-tap"
 import { signIn } from "@/lib/auth-client"
 
 const oauthProviders = [
@@ -14,6 +15,8 @@ const oauthProviders = [
 
 export function OAuthButtons({ redirect }: { redirect: string }) {
   const [error, setError] = useState<string | null>(null)
+
+  useOneTap(redirect)
 
   const oauthMutation = useMutation({
     mutationFn: async (provider: (typeof oauthProviders)[number]["id"]) => {

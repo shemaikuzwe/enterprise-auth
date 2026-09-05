@@ -5,6 +5,7 @@ import {
   adminClient,
   deviceAuthorizationClient,
   emailOTPClient,
+  oneTapClient,
   organizationClient,
   twoFactorClient,
 } from "better-auth/client/plugins";
@@ -17,6 +18,9 @@ export const authClient = createAuthClient({
     ssoClient(),
     deviceAuthorizationClient(),
     emailOTPClient(),
+    oneTapClient({
+      clientId: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID!,
+    }),
     passkeyClient(),
     twoFactorClient({
       twoFactorPage:"/2fa",
