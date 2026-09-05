@@ -1,7 +1,10 @@
 "use server";
 
+import { headers } from "next/headers";
 import { eq } from "drizzle-orm";
 import { db, schema } from "./db";
+import { auth } from "./auth";
+import type { CreateClientValues } from "./validations/oauth";
 
 
 export type LookupResult =
@@ -31,6 +34,26 @@ export async function emailLookup(email: string): Promise<LookupResult> {
       return { kind: "otp" } satisfies LookupResult;
     }
     return { kind: "unknown" } satisfies LookupResult;
+}
+
+export async function createOAuthClient(values: CreateClientValues) {
+  const requestHeaders = await headers();
+  const session = await auth.api.getSession({ headers: requestHeaders });
+  if ((session?.user as { role?: string | null } | undefined)?.role !== "admin") {
+    throw new Error("Not authorized");
+  }
+  return auth.api.adminCreateOAuthClient({
+    headers: requestHeaders,
+    body: {
+      client_name: values.client_name,
+      logo_uri: values.logo_uri || undefined,
+      redirect_uris: values.redirect_uris.split("\n").map((u) => u.trim()).filter(Boolean),
+      application_type: values.application_type,
+      token_endpoint_auth_method: values.token_endpoint_auth_method,
+      scope: values.scope.join(" "),
+      skip_consent: values.skip_consent,
+    },
+  });
 }
 
 export async function resolveIdpMetadata(

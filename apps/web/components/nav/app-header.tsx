@@ -1,8 +1,9 @@
 "use client";
 
-import { Alert02Icon } from "@hugeicons/core-free-icons";
+import { Alert02Icon, AppStoreIcon, UsersIcon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { useMutation } from "@tanstack/react-query";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
@@ -61,12 +62,27 @@ function ImpersonationBanner() {
 }
 
 export function AppHeader() {
+  const session = useSession();
+  const isAdmin = (session?.user as { role?: string | null } | undefined)?.role === "admin";
+
   return (
     <header className="border-b">     
       <div className="mx-auto flex h-14 w-full max-w-3xl items-center gap-1 px-6">
         <BrandMark />
         <span aria-hidden="true" className="text-lg font-light text-border">/</span>
         <OrganizationSwitcher />
+        {isAdmin ? (
+          <nav className="ml-2 hidden items-center gap-1 sm:flex" aria-label="Admin">
+            <Button variant="ghost" size="sm" render={<Link href="/users" />}>
+              <HugeiconsIcon icon={UsersIcon} className="size-4" />
+              Users
+            </Button>
+            <Button variant="ghost" size="sm" render={<Link href="/applications" />}>
+              <HugeiconsIcon icon={AppStoreIcon} className="size-4" />
+              Applications
+            </Button>
+          </nav>
+        ) : null}
         <div className="ml-auto flex shrink-0 items-center gap-4">
           <ImpersonationBanner />
           <UserMenu />
