@@ -8,16 +8,25 @@ import { useSession } from "@/components/session-provider"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { authClient } from "@/lib/auth-client"
+import { SCOPE_DESCRIPTIONS } from "@/lib/oauth-scopes"
+
+interface VerifiedDevice {
+  userCode: string
+  clientName: string | null
+  scopes: string[]
+}
+
 export default function DevicePage() {
   const searchParams = useSearchParams()
   const session = useSession()
   const [code, setCode] = useState(() =>
     searchParams.get("user_code") ?? ""
   )
+  const [verified, setVerified] = useState<VerifiedDevice | null>(null)
   const [approved, setApproved] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const deviceMutation = useMutation({
+  const lookupMutation = useMutation({
     mutationFn: async (userCode: string) => {
       const verification = await authClient.device({
         query: { user_code: userCode },
@@ -30,6 +39,34 @@ export default function DevicePage() {
         throw new Error("This device code has already been used.")
       }
 
+      const data = verification.data as {
+        status: string
+        client_id?: string | null
+        scope?: string | null
+      }
+      let clientName: string | null = data.client_id ?? null
+      if (data.client_id) {
+        const { data: client } = await authClient.oauth2.publicClient({
+          query: { client_id: data.client_id },
+        })
+        if (client?.client_name) clientName = client.client_name
+      }
+      return {
+        userCode,
+        clientName,
+        scopes: (data.scope ?? "").split(" ").filter(Boolean),
+      } satisfies VerifiedDevice
+    },
+    onSuccess: (info) => {
+      setVerified(info)
+    },
+    onError: (mutationError: Error) => {
+      setError(mutationError.message)
+    },
+  })
+
+  const approveMutation = useMutation({
+    mutationFn: async (userCode: string) => {
       const approval = await authClient.device.approve({ userCode })
       if (approval.error) {
         throw new Error(approval.error.error ?? "Could not authorize this device.")
@@ -59,7 +96,7 @@ export default function DevicePage() {
       return
     }
 
-    deviceMutation.mutate(userCode)
+    lookupMutation.mutate(userCode)
   }
 
   if (approved) {
@@ -69,6 +106,66 @@ export default function DevicePage() {
         <p className="text-sm text-muted-foreground">
           You can close this page and return to your terminal.
         </p>
+      </section>
+    )
+  }
+
+  if (verified) {
+    return (
+      <section className="flex flex-col gap-8">
+        <div className="space-y-2">
+          <h1 className="text-xl font-semibold tracking-tight">Authorize this device?</h1>
+          <p className="text-sm text-muted-foreground">
+            {verified.clientName
+              ? `“${verified.clientName}” is requesting access to your account on a new device.`
+              : "A device is requesting access to your account."}
+          </p>
+        </div>
+
+        {verified.scopes.length > 0 ? (
+          <div className="rounded-lg border p-4">
+            <p className="text-sm font-medium">This device will be able to</p>
+            <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-muted-foreground">
+              {verified.scopes.map((scope) => (
+                <li key={scope}>{SCOPE_DESCRIPTIONS[scope] ?? scope}</li>
+              ))}
+            </ul>
+          </div>
+        ) : null}
+
+        <div className="flex gap-3">
+          <Button
+            type="button"
+            variant="outline"
+            size="lg"
+            className="flex-1"
+            disabled={approveMutation.isPending}
+            onClick={() => {
+              setVerified(null)
+              setError(null)
+            }}
+          >
+            Cancel
+          </Button>
+          <Button
+            type="button"
+            size="lg"
+            className="flex-1"
+            disabled={approveMutation.isPending}
+            onClick={() => {
+              setError(null)
+              approveMutation.mutate(verified.userCode)
+            }}
+          >
+            {approveMutation.isPending ? "Authorizing…" : "Authorize device"}
+          </Button>
+        </div>
+
+        {error ? (
+          <p className="text-center text-xs text-destructive" role="alert">
+            {error}
+          </p>
+        ) : null}
       </section>
     )
   }
@@ -106,9 +203,9 @@ export default function DevicePage() {
         <Button
           type="submit"
           size="lg"
-          disabled={deviceMutation.isPending}
+          disabled={lookupMutation.isPending}
         >
-          {deviceMutation.isPending ? "Authorizing…" : session ? "Authorize device" : "Continue to sign in"}
+          {lookupMutation.isPending ? "Checking…" : session ? "Continue" : "Continue to sign in"}
         </Button>
 
         {error ? (

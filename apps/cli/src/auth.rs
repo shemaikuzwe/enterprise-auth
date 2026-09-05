@@ -24,6 +24,10 @@ struct DeviceCodeResponse {
 #[derive(Debug, Deserialize)]
 struct TokenResponse {
     access_token: String,
+    refresh_token: Option<String>,
+    expires_in: Option<u64>,
+    token_type: Option<String>,
+    scope: Option<String>,
 }
 
 #[derive(Clone, Debug, Deserialize)]
@@ -45,8 +49,11 @@ pub struct Session {
 #[derive(Clone, Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct User {
+    #[serde(default)]
     pub name: String,
+    #[serde(default)]
     pub email: String,
+    #[serde(default)]
     pub email_verified: bool,
 }
 
@@ -85,13 +92,7 @@ pub enum AuthEvent {
 #[derive(Serialize)]
 struct DeviceCodeRequest<'a> {
     client_id: &'a str,
-}
-
-#[derive(Serialize)]
-struct TokenRequest<'a> {
-    grant_type: &'static str,
-    device_code: &'a str,
-    client_id: &'a str,
+    scope: &'a str,
 }
 
 enum PollResult {
@@ -107,7 +108,8 @@ impl Auth {
         Self {
             client: reqwest::Client::new(),
             base_url: "http://localhost:3000/api/auth".into(),
-            client_id: "enterprise-auth-cli".into(),
+            client_id: std::env::var("ENTERPRISE_AUTH_CLIENT_ID")
+                .unwrap_or_else(|_| "JkHHwqVJcDoRiXSOKpqslmBnAnGQHWNo".into()),
         }
     }
 
@@ -163,9 +165,12 @@ impl Auth {
     pub async fn logout(self, session: AuthSession, sender: UnboundedSender<AuthEvent>) {
         let result = self
             .client
-            .post(format!("{}/sign-out", self.base_url))
-            .bearer_auth(&session.access_token)
-            .json(&serde_json::json!({}))
+            .post(format!("{}/oauth2/revoke", self.base_url))
+            .form(&[
+                ("token", session.access_token.as_str()),
+                ("token_type_hint", "access_token"),
+                ("client_id", self.client_id.as_str()),
+            ])
             .send()
             .await
             .map_err(|error| error.to_string())
@@ -190,6 +195,7 @@ impl Auth {
             .post(format!("{}/device/code", self.base_url))
             .json(&DeviceCodeRequest {
                 client_id: &self.client_id,
+                scope: "openid profile email offline_access",
             })
             .send()
             .await
@@ -206,12 +212,12 @@ impl Auth {
     async fn poll(&self, device_code: &str) -> Result<PollResult, String> {
         let response = self
             .client
-            .post(format!("{}/device/token", self.base_url))
-            .json(&TokenRequest {
-                grant_type: DEVICE_GRANT_TYPE,
-                device_code,
-                client_id: &self.client_id,
-            })
+            .post(format!("{}/oauth2/token", self.base_url))
+            .form(&[
+                ("grant_type", DEVICE_GRANT_TYPE),
+                ("device_code", device_code),
+                ("client_id", self.client_id.as_str()),
+            ])
             .send()
             .await
             .map_err(|error| error.to_string())?;
@@ -226,7 +232,9 @@ impl Auth {
                 return Err("Authentication response did not include an access token".into());
             }
 
-            let session = self.get_session(token.access_token).await?;
+            let session = self
+                .get_session(token.access_token, token.expires_in.unwrap_or(3600))
+                .await?;
             return Ok(PollResult::Authenticated(session));
         }
 
@@ -246,30 +254,46 @@ impl Auth {
         }
     }
 
-    async fn get_session(&self, access_token: String) -> Result<AuthSession, String> {
+    async fn get_session(&self, access_token: String, expires_in: u64) -> Result<AuthSession, String> {
         #[derive(Deserialize)]
-        struct SessionResponse {
-            session: Session,
-            user: User,
+        struct UserInfoResponse {
+            sub: String,
+            #[serde(default)]
+            name: String,
+            #[serde(default)]
+            email: String,
+            #[serde(default)]
+            email_verified: bool,
         }
 
-        let response = self
+        let userinfo = self
             .client
-            .get(format!("{}/get-session", self.base_url))
+            .get(format!("{}/oauth2/userinfo", self.base_url))
             .bearer_auth(&access_token)
             .send()
             .await
             .map_err(|error| error.to_string())?
             .error_for_status()
             .map_err(|error| error.to_string())?
-            .json::<SessionResponse>()
+            .json::<UserInfoResponse>()
             .await
             .map_err(|error| error.to_string())?;
 
+        let expires_at = chrono::Utc::now() + chrono::Duration::seconds(expires_in as i64);
+
         Ok(AuthSession {
             access_token,
-            session: response.session,
-            user: response.user,
+            session: Session {
+                id: userinfo.sub,
+                expires_at: expires_at.to_rfc3339(),
+                ip_address: None,
+                user_agent: None,
+            },
+            user: User {
+                name: userinfo.name,
+                email: userinfo.email,
+                email_verified: userinfo.email_verified,
+            },
         })
     }
 }
