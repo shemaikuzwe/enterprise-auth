@@ -1,3 +1,6 @@
+packages:
+  - "apps/web"
+  - "apps/demo"
 allowBuilds:
   esbuild: true
   sharp: false
